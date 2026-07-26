@@ -6,6 +6,7 @@ from agent.prompts import SYSTEM_PROMPT # 系统提示词
 from llm.llm_client import LLMClient # 大模型客户端基类
 from llm.message import LLMResponse, ToolCall # 大模型响应统一格式 工具调用请求
 from tools.tool_manager import ToolManager # 工具类管理
+from agent.logger import AgentLogger
 
 
 class SWEAgent:
@@ -30,6 +31,7 @@ class SWEAgent:
         llm_client: LLMClient,
         tool_manager: ToolManager,
         max_steps: int = 30,
+        logger: AgentLogger | None = None,
     ):
         if max_steps <= 0:
             raise ValueError(
@@ -39,6 +41,7 @@ class SWEAgent:
         self.llm_client = llm_client
         self.tool_manager = tool_manager
         self.max_steps = max_steps
+        self.logger = logger or AgentLogger()
 
     def run(self, task: str) -> str:
         """
@@ -61,11 +64,13 @@ class SWEAgent:
             and state.step_count < self.max_steps
         ):
             state.step_count += 1
+            self.logger.log_step(state.step_count)
 
             response = self.llm_client.chat( # 调用模型 发送消息历史和工具给大模型
                 messages=state.messages,
                 tools=self.tool_manager.get_schemas(),
             )
+            self.logger.log_model_content(response.content)
 
             # 先把模型本轮回复放入消息历史 构建assistant消息
             assistant_message = (
@@ -83,6 +88,7 @@ class SWEAgent:
                     response.content
                     or "模型没有返回最终答案。"
                 )
+                self.logger.log_finished(state.final_answer)
                 break
 
             # 模型请求调用一个或多个工具
@@ -93,6 +99,7 @@ class SWEAgent:
                         tool_call.arguments,
                     )
                 )
+                self.logger.log_tool_result(tool_name=tool_call.name,result=tool_result,)
 
                 # 工具执行结果也要放回消息历史
                 state.messages.append(
