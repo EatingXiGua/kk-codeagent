@@ -1,4 +1,5 @@
 import json
+from observability import traceable
 from typing import Any
 
 from agent.agent_state import AgentState # agent状态
@@ -43,6 +44,11 @@ class SWEAgent:
         self.max_steps = max_steps
         self.logger = logger or AgentLogger()
 
+    @traceable(
+        name="SWEAgent.run",
+        run_type="chain",
+        tags=["sweagent", "v1"],
+    )
     def run(self, task: str) -> str:
         """
         执行用户任务。
