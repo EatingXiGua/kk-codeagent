@@ -46,7 +46,7 @@ def main() -> None:
 
     print("\n--- search_code ---")
     print(tools["search_code"].invoke({
-        "query": "class SWEAgent",
+        "query": "class LangGraphSWEAgent",
         "path": "agent",
         "file_pattern": "*.py",
         "max_results": 5,

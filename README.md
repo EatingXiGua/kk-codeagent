@@ -1,74 +1,83 @@
 # SWE Agent
-这是一个用 Python 实现的简单 SWE Agent 第一版本。
 
-项目目标是让大模型具备基本的软件工程协作能力：理解用户任务，查看项目文件，搜索代码，修改文件，并运行测试或命令进行验证。当前版本重点实现了 Agent 主循环、工具调用机制、工作区路径限制，以及 Moonshot/Kimi 模型接入。
+这是一个基于 Python、LangChain、LangGraph 和 LangSmith 的简易 SWE Agent。
+
+当前版本只保留 LangGraph 版 Agent 入口：模型通过 LangChain 调用 Moonshot/Kimi，工具通过 LangChain tools 暴露给 LangGraph，运行轨迹可接入 LangSmith 观察。
+
 ## 主要功能
-- 基于大模型的任务执行循环
-- 支持 OpenAI 兼容格式的工具调用
-- 接入 Moonshot/Kimi API
-- 工作区内文件读取、写入、搜索和目录查看
-- 支持在工作区内运行白名单命令
-- 对工具执行结果进行封装，并回传给模型继续推理
-- 对工作区路径做基础保护，阻止访问工作区外文件
 
-## Agent执行流程
-SWEAgent 的核心流程如下：
-1. 接收用户任务
-2. 构造初始消息，包括系统提示词和用户任务
-3. 调用大模型
-4. 如果模型返回普通文本，则认为任务完成
-5. 如果模型请求调用工具，则执行对应工具
-6. 将工具执行结果加入消息历史
-7. 再次调用模型，直到任务完成或达到最大轮数
+- 使用 LangGraph 编排 Agent 循环
+- 使用 LangChain `ChatOpenAI` 兼容接入 Moonshot/Kimi
+- 使用 LangChain tools 包装本地工具能力
+- 支持查看目录、读取文件、搜索代码、写入文件、运行白名单命令
+- 使用 `Workspace` 限制文件访问范围
+- 可选接入 LangSmith 记录运行轨迹
 
-## 已经实现工具
-当前 Agent 支持以下工具：  
-list_files	列出工作区内的文件和目录  
-read_file	读取指定文本文件内容，并显示行号  
-search_code	在工作区内搜索代码关键字  
-write_file	创建或覆盖写入文件  
-run_command	在工作区根目录执行测试、构建或检查命令  
+## 项目结构
 
-## LLM配置
-需要配置环境变量：  
-MOONSHOT_API_KEY=你的 API Key  
-可选环境变量配置：  
-MOONSHOT_MODEL=kimi-k2.6  
-MOONSHOT_BASE_URL=https://api.moonshot.cn/v1  
-
-## 运行例子
+```text
+sweagent/
+├── agent/              # LangGraph Agent 封装
+├── graph/              # LangGraph 图构建
+├── llm/                # LangChain Moonshot 模型适配
+├── tools/              # 本地工具和 LangChain tools 适配
+├── workspace/          # 工作区路径管理
+├── sandbox/            # 本地命令执行封装
+├── observability/      # LangSmith 接入
+├── tests/              # 自动化测试和手工测试脚本
+└── main.py             # 标准入口
 ```
-from agent import SWEAgent
-from llm import MoonshotLLMClient
-from tools import (
-    ListFilesTool,
-    ReadFileTool,
-    RunCommandTool,
-    SearchCodeTool,
-    ToolManager,
-    WriteFileTool,
-)
-from workspace.workspace import Workspace
 
+## 环境变量
 
-workspace = Workspace("D:/pythonproject/sweagent")
+复制 `.env.example` 为 `.env`，然后填入本地真实配置：
 
-tool_manager = ToolManager([
-    ListFilesTool(workspace),
-    ReadFileTool(workspace),
-    SearchCodeTool(workspace),
-    WriteFileTool(workspace),
-    RunCommandTool(workspace),
-])
+```bash
+MOONSHOT_API_KEY=your_moonshot_api_key
+MOONSHOT_MODEL=kimi-k2.6
+MOONSHOT_BASE_URL=https://api.moonshot.cn/v1
 
-llm_client = MoonshotLLMClient()
-
-agent = SWEAgent(
-    llm_client=llm_client,
-    tool_manager=tool_manager,
-    max_steps=10,
-)
-
-result = agent.run("查看当前项目结构，并说明主要模块")
-print(result)
+LANGSMITH_TRACING=false
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=sweagent-v1
 ```
+
+`.env` 会被 Git 忽略，不要把真实 API Key 提交到仓库。
+
+## 安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+如果使用本项目的 conda 环境：
+
+```bash
+D:\AppDir\miniconda311\envs\swe-agent\python.exe -m pip install -r requirements.txt
+```
+
+## 运行
+
+```bash
+python main.py 查看当前项目结构，并说明主要模块
+```
+
+也可以指定最大图执行步数：
+
+```bash
+python main.py --max-steps 20 查看当前项目结构
+```
+
+检查 LangSmith 配置：
+
+```bash
+python main.py --langsmith-status
+```
+
+## 测试
+
+```bash
+python -m pytest
+```
+
+当前测试不依赖真实模型网络调用，主要覆盖工作区路径保护、命令执行、LangChain tools、Moonshot 模型工厂和 LangGraph 图构建。

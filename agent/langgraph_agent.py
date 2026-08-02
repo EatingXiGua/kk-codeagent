@@ -10,8 +10,13 @@ class LangGraphSWEAgent:
     def __init__(
         self,
         graph: Any,
+        max_steps: int = 30,
     ):
+        if max_steps <= 0:
+            raise ValueError("max_steps must be greater than 0")
+
         self.graph = graph
+        self.max_steps = max_steps
 
     @traceable(
         name="LangGraphSWEAgent.run",
@@ -27,6 +32,8 @@ class LangGraphSWEAgent:
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=task.strip()),
             ],
+        }, config={
+            "recursion_limit": self.max_steps,
         })
 
         messages = result.get("messages", [])

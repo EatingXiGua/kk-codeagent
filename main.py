@@ -4,9 +4,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from agent import LangGraphSWEAgent, SWEAgent
+from agent import LangGraphSWEAgent
 from graph import build_swe_graph
-from llm import MoonshotLLMClient, create_langchain_moonshot
+from llm import create_langchain_moonshot
 from observability import get_langsmith_status
 from tools import (
     ListFilesTool,
@@ -51,12 +51,6 @@ def parse_args() -> argparse.Namespace:
         help="Maximum agent loop steps. Defaults to SWE_AGENT_MAX_STEPS or 10.",
     )
     parser.add_argument(
-        "--backend",
-        choices=["classic", "langgraph"],
-        default=os.getenv("AGENT_BACKEND", "classic"),
-        help="Agent backend. Defaults to AGENT_BACKEND or classic.",
-    )
-    parser.add_argument(
         "--langsmith-status",
         action="store_true",
         help="Show LangSmith tracing configuration and exit.",
@@ -72,25 +66,16 @@ def get_task(args: argparse.Namespace) -> str:
 
 
 def build_agent(
-    backend: str,
     tool_manager: ToolManager,
     max_steps: int,
-):
-    if backend == "classic":
-        llm_client = MoonshotLLMClient()
-        return SWEAgent(
-            llm_client=llm_client,
-            tool_manager=tool_manager,
-            max_steps=max_steps,
-        )
-
-    if backend == "langgraph":
-        model = create_langchain_moonshot()
-        tools = build_langchain_tools(tool_manager)
-        graph = build_swe_graph(model, tools)
-        return LangGraphSWEAgent(graph)
-
-    raise ValueError(f"Unsupported agent backend: {backend}")
+) -> LangGraphSWEAgent:
+    model = create_langchain_moonshot()
+    tools = build_langchain_tools(tool_manager)
+    graph = build_swe_graph(model, tools)
+    return LangGraphSWEAgent(
+        graph=graph,
+        max_steps=max_steps,
+    )
 
 
 def main() -> None:
@@ -114,7 +99,6 @@ def main() -> None:
     workspace = Workspace(str(workspace_path))
     tool_manager = build_tool_manager(workspace)
     agent = build_agent(
-        backend=args.backend,
         tool_manager=tool_manager,
         max_steps=args.max_steps,
     )
