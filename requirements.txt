@@ -2,3 +2,6 @@ openai
 python-dotenv
 langsmith
 pytest
+langchain
+langchain-openai
+langgraph

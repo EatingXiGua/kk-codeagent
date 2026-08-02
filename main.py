@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from agent import SWEAgent
 from llm import MoonshotLLMClient
+from observability import get_langsmith_status
 from tools import (
     ListFilesTool,
     ReadFileTool,
@@ -47,6 +48,11 @@ def parse_args() -> argparse.Namespace:
         default=int(os.getenv("SWE_AGENT_MAX_STEPS", "10")),
         help="Maximum agent loop steps. Defaults to SWE_AGENT_MAX_STEPS or 10.",
     )
+    parser.add_argument(
+        "--langsmith-status",
+        action="store_true",
+        help="Show LangSmith tracing configuration and exit.",
+    )
     return parser.parse_args()
 
 
@@ -61,6 +67,14 @@ def main() -> None:
     load_dotenv()
 
     args = parse_args()
+
+    if args.langsmith_status:
+        status = get_langsmith_status()
+        print("LangSmith status:")
+        for key, value in status.items():
+            print(f"{key}: {value}")
+        return
+
     task = get_task(args)
 
     if not task:

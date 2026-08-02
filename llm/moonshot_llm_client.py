@@ -4,6 +4,7 @@ from typing import Any
 
 from dotenv import load_dotenv # 加载.env文件中的环境变量
 from openai import OpenAI # openai api 兼容moonshot api
+from observability import wrap_openai_client
 
 from llm.llm_client import LLMClient
 from llm.message import LLMResponse, ToolCall # 统一响应格式
@@ -79,10 +80,12 @@ class MoonshotLLMClient(LLMClient):
                 "timeout 必须大于 0"
             )
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url,
-            timeout=timeout,
+        self.client = wrap_openai_client(
+            OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=timeout,
+            )
         )
 
     def chat(
