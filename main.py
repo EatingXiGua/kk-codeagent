@@ -13,21 +13,19 @@ from tools import (
     ReadFileTool,
     RunCommandTool,
     SearchCodeTool,
-    ToolManager,
     WriteFileTool,
-    build_langchain_tools,
 )
 from workspace.workspace import Workspace
 
 
-def build_tool_manager(workspace: Workspace) -> ToolManager:
-    return ToolManager([
-        ListFilesTool(workspace),
-        ReadFileTool(workspace),
-        SearchCodeTool(workspace),
-        WriteFileTool(workspace),
-        RunCommandTool(workspace),
-    ])
+def build_tools(workspace: Workspace):
+    return [
+        ListFilesTool(workspace=workspace),
+        ReadFileTool(workspace=workspace),
+        SearchCodeTool(workspace=workspace),
+        WriteFileTool(workspace=workspace),
+        RunCommandTool(workspace=workspace),
+    ]
 
 
 def parse_args() -> argparse.Namespace:
@@ -66,11 +64,10 @@ def get_task(args: argparse.Namespace) -> str:
 
 
 def build_agent(
-    tool_manager: ToolManager,
+    tools,
     max_steps: int,
 ) -> LangGraphSWEAgent:
     model = create_langchain_moonshot()
-    tools = build_langchain_tools(tool_manager)
     graph = build_swe_graph(model, tools)
     return LangGraphSWEAgent(
         graph=graph,
@@ -97,9 +94,9 @@ def main() -> None:
 
     workspace_path = Path(args.workspace).resolve()
     workspace = Workspace(str(workspace_path))
-    tool_manager = build_tool_manager(workspace)
+    tools = build_tools(workspace)
     agent = build_agent(
-        tool_manager=tool_manager,
+        tools=tools,
         max_steps=args.max_steps,
     )
 

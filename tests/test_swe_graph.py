@@ -3,7 +3,7 @@ from typing import Any
 from langchain_core.messages import AIMessage
 
 from graph import build_swe_graph
-from tools import ListFilesTool, ToolManager, build_langchain_tools
+from tools import ListFilesTool
 from workspace.workspace import Workspace
 
 
@@ -18,10 +18,9 @@ class FakeModel:
 
 def test_build_swe_graph_compiles(tmp_path):
     workspace = Workspace(str(tmp_path))
-    tool_manager = ToolManager([
-        ListFilesTool(workspace),
-    ])
-    tools = build_langchain_tools(tool_manager)
+    tools = [
+        ListFilesTool(workspace=workspace),
+    ]
 
     graph = build_swe_graph(FakeModel(), tools)
 

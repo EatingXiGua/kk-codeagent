@@ -5,31 +5,27 @@ from tools import (
     ReadFileTool,
     RunCommandTool,
     SearchCodeTool,
-    ToolManager,
     WriteFileTool,
-    build_langchain_tools,
 )
 from workspace.workspace import Workspace
 
 
-def build_test_tool_manager(tmp_path: Path) -> ToolManager:
+def build_test_tools(tmp_path: Path):
     workspace = Workspace(str(tmp_path))
 
-    return ToolManager([
-        ListFilesTool(workspace),
-        ReadFileTool(workspace),
-        SearchCodeTool(workspace),
-        WriteFileTool(workspace),
-        RunCommandTool(workspace),
-    ])
+    return [
+        ListFilesTool(workspace=workspace),
+        ReadFileTool(workspace=workspace),
+        SearchCodeTool(workspace=workspace),
+        WriteFileTool(workspace=workspace),
+        RunCommandTool(workspace=workspace),
+    ]
 
 
-def test_build_langchain_tools_has_all_tool_names(
+def test_langchain_tools_have_all_tool_names(
     tmp_path: Path,
 ):
-    tool_manager = build_test_tool_manager(tmp_path)
-
-    tools = build_langchain_tools(tool_manager)
+    tools = build_test_tools(tmp_path)
 
     tool_names = {
         tool.name
@@ -53,10 +49,10 @@ def test_list_files_langchain_tool_can_invoke(
         encoding="utf-8",
     )
 
-    tool_manager = build_test_tool_manager(tmp_path)
+    test_tools = build_test_tools(tmp_path)
     tools = {
         tool.name: tool
-        for tool in build_langchain_tools(tool_manager)
+        for tool in test_tools
     }
 
     result = tools["list_files"].invoke({

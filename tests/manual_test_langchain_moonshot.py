@@ -6,12 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from llm.langchain_moonshot import create_langchain_moonshot
-from tools import (
-    ListFilesTool,
-    ReadFileTool,
-    ToolManager,
-    build_langchain_tools,
-)
+from tools import ListFilesTool, ReadFileTool
 from workspace.workspace import Workspace
 
 
@@ -21,17 +16,16 @@ def main() -> None:
     print("\n--- plain chat ---")
     plain_response = model.invoke([
         SystemMessage(content="You are a concise assistant."),
-        HumanMessage(content="用一句话回答：2 + 2 等于多少？"),
+        HumanMessage(content="Answer in one sentence: what is 2 + 2?"),
     ])
     print(plain_response.content)
 
     print("\n--- tool binding ---")
     workspace = Workspace(".")
-    tool_manager = ToolManager([
-        ListFilesTool(workspace),
-        ReadFileTool(workspace),
-    ])
-    tools = build_langchain_tools(tool_manager)
+    tools = [
+        ListFilesTool(workspace=workspace),
+        ReadFileTool(workspace=workspace),
+    ]
     model_with_tools = model.bind_tools(tools)
 
     tool_response = model_with_tools.invoke([
@@ -43,8 +37,8 @@ def main() -> None:
         ),
         HumanMessage(
             content=(
-                "请调用 list_files 工具查看当前工作区根目录，"
-                "不要直接猜测目录内容。"
+                "Call the list_files tool to inspect the workspace root. "
+                "Do not guess the directory contents."
             )
         ),
     ])

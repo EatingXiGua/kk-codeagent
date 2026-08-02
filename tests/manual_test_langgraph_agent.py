@@ -9,19 +9,16 @@ from llm import create_langchain_moonshot
 from tools import (
     ListFilesTool,
     ReadFileTool,
-    ToolManager,
-    build_langchain_tools,
 )
 from workspace.workspace import Workspace
 
 
 def main() -> None:
     workspace = Workspace(".")
-    tool_manager = ToolManager([
-        ListFilesTool(workspace),
-        ReadFileTool(workspace),
-    ])
-    tools = build_langchain_tools(tool_manager)
+    tools = [
+        ListFilesTool(workspace=workspace),
+        ReadFileTool(workspace=workspace),
+    ]
 
     model = create_langchain_moonshot()
     graph = build_swe_graph(model, tools)

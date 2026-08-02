@@ -8,26 +8,22 @@ from tools import (
     ReadFileTool,
     RunCommandTool,
     SearchCodeTool,
-    ToolManager,
     WriteFileTool,
 )
-from tools.langchain_tools import build_langchain_tools
 from workspace.workspace import Workspace
 
 
 def main() -> None:
     workspace = Workspace(".")
-    tool_manager = ToolManager([
-        ListFilesTool(workspace),
-        ReadFileTool(workspace),
-        SearchCodeTool(workspace),
-        WriteFileTool(workspace),
-        RunCommandTool(workspace),
-    ])
-
     tools = {
         tool.name: tool
-        for tool in build_langchain_tools(tool_manager)
+        for tool in [
+            ListFilesTool(workspace=workspace),
+            ReadFileTool(workspace=workspace),
+            SearchCodeTool(workspace=workspace),
+            WriteFileTool(workspace=workspace),
+            RunCommandTool(workspace=workspace),
+        ]
     }
 
     print("\n--- list_files ---")
