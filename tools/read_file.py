@@ -38,13 +38,14 @@ class ReadFileTool(BaseTool):
         if end_line is not None and end_line < start_line:
             return "Invalid arguments: end_line cannot be less than start_line"
 
-        file_path = self.workspace.resolve_path(path)
-
-        if not file_path.exists():
+        try:
+            file_path = self.workspace.resolve_file(path)
+        except FileNotFoundError:
             return f"File does not exist: {path}"
-
-        if not file_path.is_file():
+        except IsADirectoryError:
             return f"Path is not a file: {path}"
+        except PermissionError as exc:
+            return str(exc)
 
         try:
             content = file_path.read_text(

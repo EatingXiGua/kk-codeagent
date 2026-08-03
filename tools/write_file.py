@@ -39,7 +39,10 @@ class WriteFileTool(BaseTool):
                 f"maximum is {self.max_content_length} characters."
             )
 
-        file_path = self.workspace.resolve_path(path)
+        try:
+            file_path = self.workspace.resolve_path(path)
+        except PermissionError as exc:
+            return str(exc)
 
         if file_path.exists() and file_path.is_dir():
             return f"Write failed: path is a directory: {path}"

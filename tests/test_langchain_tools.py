@@ -48,6 +48,10 @@ def test_list_files_langchain_tool_can_invoke(
         "print('hello')\n",
         encoding="utf-8",
     )
+    (tmp_path / ".env").write_text(
+        "SECRET=value\n",
+        encoding="utf-8",
+    )
 
     test_tools = build_test_tools(tmp_path)
     tools = {
@@ -62,3 +66,4 @@ def test_list_files_langchain_tool_can_invoke(
     })
 
     assert "[FILE] main.py" in result
+    assert ".env" not in result

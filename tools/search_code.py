@@ -40,22 +40,6 @@ class SearchCodeTool(BaseTool):
 
     workspace: Workspace
 
-    ignored_names: ClassVar[set[str]] = {
-        ".git",
-        ".idea",
-        ".vscode",
-        "__pycache__",
-        ".pytest_cache",
-        ".mypy_cache",
-        ".ruff_cache",
-        ".venv",
-        "venv",
-        "node_modules",
-        "target",
-        "dist",
-        "build",
-    }
-
     default_file_patterns: ClassVar[list[str]] = [
         "*.py",
         "*.java",
@@ -91,13 +75,14 @@ class SearchCodeTool(BaseTool):
         case_sensitive: bool = False,
         max_results: int = 100,
     ) -> str:
-        search_root = self.workspace.resolve_path(path)
-
-        if not search_root.exists():
+        try:
+            search_root = self.workspace.resolve_dir(path)
+        except FileNotFoundError:
             return f"Search path does not exist: {path}"
-
-        if not search_root.is_dir():
+        except NotADirectoryError:
             return f"Search path is not a directory: {path}"
+        except PermissionError as exc:
+            return str(exc)
 
         patterns = (
             [file_pattern]
@@ -114,7 +99,7 @@ class SearchCodeTool(BaseTool):
                 if not file_path.is_file() or file_path.is_symlink():
                     continue
 
-                if any(part in self.ignored_names for part in file_path.parts):
+                if self.workspace.should_ignore(file_path):
                     continue
 
                 if not any(

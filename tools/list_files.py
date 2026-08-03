@@ -1,5 +1,3 @@
-from typing import ClassVar
-
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,35 +29,20 @@ class ListFilesTool(BaseTool):
 
     workspace: Workspace
 
-    ignored_names: ClassVar[set[str]] = {
-        ".git",
-        ".idea",
-        ".vscode",
-        "__pycache__",
-        ".pytest_cache",
-        ".mypy_cache",
-        ".ruff_cache",
-        ".venv",
-        "venv",
-        "node_modules",
-        "target",
-        "dist",
-        "build",
-    }
-
     def _run(
         self,
         path: str = ".",
         recursive: bool = False,
         max_results: int = 200,
     ) -> str:
-        target_path = self.workspace.resolve_path(path)
-
-        if not target_path.exists():
+        try:
+            target_path = self.workspace.resolve_dir(path)
+        except FileNotFoundError:
             return f"Path does not exist: {path}"
-
-        if not target_path.is_dir():
+        except NotADirectoryError:
             return f"Path is not a directory: {path}"
+        except PermissionError as exc:
+            return str(exc)
 
         iterator = (
             target_path.rglob("*")
@@ -70,7 +53,7 @@ class ListFilesTool(BaseTool):
 
         try:
             for item in iterator:
-                if any(part in self.ignored_names for part in item.parts):
+                if self.workspace.should_ignore(item):
                     continue
 
                 relative_path = item.relative_to(self.workspace.root)
